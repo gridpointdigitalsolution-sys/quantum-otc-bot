@@ -24,6 +24,16 @@ app = FastAPI(title="Quantum OTC Bot")
 _engine = {"obj": None, "task": None}
 
 
+@app.middleware("http")
+async def _no_cache(request, call_next):
+    # NEVER cache: dashboard + data are always fresh (no stale UI / stale numbers, ever)
+    resp = await call_next(request)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
 def _save_active(ssid, tz, demo):
     try:
         os.makedirs(os.path.dirname(ACTIVE), exist_ok=True)

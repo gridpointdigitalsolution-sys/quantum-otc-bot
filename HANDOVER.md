@@ -142,6 +142,26 @@ only (no secrets, no data). gh account: gridpointdigitalsolution-sys.
 4. Optional: more pairs if PO adds 24/7 OTC currencies; periodic re-validation as data grows.
 
 ═══════════════════════════════════════════════════════════════════
+## 9b. RELIABILITY / NO-STALE-DATA RULES (lessons locked in — do NOT regress)
+═══════════════════════════════════════════════════════════════════
+These were real bugs that caused "stale/cached" displays. All FIXED — keep them this way:
+1. **Truthful /status** — `/status` returns live engine state from `_engine["obj"].s.running`,
+   NOT the on-disk status file. On restart with no live engine it reports "not running" (never a
+   leftover running:true). Bug was: dashboard read a stale live_status.json after a restart and
+   showed "live" when nothing ran. NEVER report running from the file alone.
+2. **No browser caching** — server sends `Cache-Control: no-store, no-cache, must-revalidate` +
+   Pragma/Expires on EVERY response (middleware in server.py); client fetches use
+   `cache:'no-store'`. So a code/UI/data update is ALWAYS fresh — no old cached dashboard/JS/numbers.
+   If you ever see "old version", it's NOT cache (that's killed) — check the VPS actually pulled
+   (`cd /opt/otc-bot && git log -1`) and restarted.
+3. **Auto-resume** — ssid saved to secrets/active.json on Start; server reloads it on startup, so
+   reboot/crash auto-reconnects. /stop clears it (intentional stop doesn't auto-resume).
+4. **Verify "really live"** — Balance shows a real number + pairs show live payouts = genuinely
+   running. "running" with null balance / empty pairs = check the engine.
+5. **Deploy correctness** — update = local edit -> git push -> VPS `git pull && systemctl restart
+   otc-bot`. Confirm with `git log -1` on the VPS. No browser cache can mask a real deploy now.
+
+═══════════════════════════════════════════════════════════════════
 ## 10. HONEST CAVEATS (never hide these)
 ═══════════════════════════════════════════════════════════════════
 - Edges are THIN (57-61% WR) on 1 month of data. Real proof = live forward test.

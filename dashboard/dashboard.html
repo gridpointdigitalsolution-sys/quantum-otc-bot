@@ -169,7 +169,7 @@ function winSound(){beep(880,.1);setTimeout(()=>beep(1320,.22),100);}     // win
 function lossSound(){beep(300,.3,'triangle');}                            // loss
 function toast(msg,cls){const d=document.createElement('div');d.className='toast '+(cls||'');
   d.textContent=msg;$('toasts').appendChild(d);setTimeout(()=>d.remove(),5000);}
-async function post(u,b){const r=await fetch(u,{method:'POST',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify(b||{})});if(r.status===401){showGate();return{ok:false,msg:'PIN required'};}return r.json();}
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify(b||{}),cache:'no-store'});if(r.status===401){showGate();return{ok:false,msg:'PIN required'};}return r.json();}
 async function start(){const ssid=$('ssid').value.trim();if(!ssid){$('msg').textContent='Paste the ssid first.';toast('Paste the ssid first');return;}
   AC=AC||new (window.AudioContext||window.webkitAudioContext)();chime();askNotify();
   $('msg').textContent='Starting…';toast('⚡ Engine starting…');
@@ -191,7 +191,7 @@ let _lastTradeKey='',_lastRunning=false,_lastSigKey='';
 function money(x){const n=+x||0;return (n<0?'-$':'$')+Math.abs(n).toFixed(2);}
 async function tick(){
   try{
-    const sr=await fetch('/status',{headers:hdr()});if(sr.status===401){showGate();return;}
+    const sr=await fetch('/status',{headers:hdr(),cache:'no-store'});if(sr.status===401){showGate();return;}
     const s=await sr.json();
     const on=s.running&&s.connected;
     $('dot').className='dot '+(on?'on live':(s.connected===false&&s.running?'off':''));
@@ -255,7 +255,7 @@ async function tick(){
        <td class="${t.win?'w':'l'}">${t.win?'WIN +':'LOSS '}${money(t.profit)}</td><td>${money(t.bal)}</td></tr>`).join('');}
   }catch(e){}
 }
-async function loadPairs(){try{const br=await fetch('/basket',{headers:hdr()});if(br.status===401){return;}const b=await br.json();const t=$('pairs');
+async function loadPairs(){try{const br=await fetch('/basket',{headers:hdr(),cache:'no-store'});if(br.status===401){return;}const b=await br.json();const t=$('pairs');
   if(b.length){t.innerHTML=b.map(p=>`<tr><td>${p.asset}</td><td><span class="pill">${p.setup}</span></td>
     <td>${p.expiry}s</td><td>${p.wr?(p.wr*100).toFixed(1)+'%':'—'}</td></tr>`).join('');}
   else t.innerHTML='<tr><td colspan="4" style="color:var(--mut)">no basket yet — optimizer still running</td></tr>';
