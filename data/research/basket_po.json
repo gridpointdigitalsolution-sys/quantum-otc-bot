@@ -70,6 +70,28 @@
     ]
   },
   {
+    "asset": "USDPHP_otc",
+    "setup": "rsi@lvl",
+    "expiry": 120,
+    "params": {
+      "ob": 75,
+      "os": 25,
+      "tol_atr": 0.5,
+      "use_adx": false,
+      "min_range_atr": 0.0
+    },
+    "n": 141,
+    "wr": 0.5816,
+    "pf": 1.268,
+    "dd": 6.35,
+    "variant": "baseline",
+    "seg_wr": [
+      0.548,
+      0.638,
+      0.58
+    ]
+  },
+  {
     "asset": "USDCAD_otc",
     "setup": "rsi@lvl",
     "expiry": 120,

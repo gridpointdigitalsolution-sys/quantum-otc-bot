@@ -161,3 +161,14 @@ Live engine reloaded basket; 3 pairs adx-filtered, 2 baseline. Verified running.
 waiting(grey)/READY(yellow)/IN TRADE(green-pulse), Live Signals manual-backup panel w/ BUY▲/SELL▼
 + TAKE NOW banner, triple-beep + voice ("buy buy buy"/"sell sell sell") + browser PUSH NOTIFICATIONS
 on each signal (needs HTTPS on phone), open-positions countdown, recent trades, live balance.
+
+### VPS PROVISIONED (2026-06-22): IP 187.77.176.95, Ubuntu 24.04, ssh root@187.77.176.95
+GitHub repo: github.com/gridpointdigitalsolution-sys/quantum-otc-bot (private). Deploy = clone + deploy_vps.sh.
+Subdomain bot.churchillbracknell.com NOT yet created (A-record -> 187.77.176.95 pending).
+
+### FINAL (2026-06-22 night) — 6-PAIR BASKET + VPS LIVE + PIN + MOBILE
+Tested ALL 112 OTC assets (currencies + stocks + crypto). Stocks/crypto OTC = NO stable edge (don't mean-revert). EURHUF dropped (one sub-breakeven period). USDPHP ADDED.
+FINAL 6 PAIRS (rsi@lvl, walk-forward stable, 92% payout): NGNUSD 5m 60.8% · NZDJPY 3m 59.5%(adx40) · BHDCNY 5m 59.2% · USDPHP 2m 58.2% · USDCAD 2m 57.4%(adx40) · OMRCNY 3m 57.1%(adx35). All DD<=8% except none>11.
+DEPLOYED: VPS 187.77.176.95 (Ubuntu24), github.com/gridpointdigitalsolution-sys/quantum-otc-bot, systemd otc-bot.service, nginx+certbot HTTPS at https://bot.churchillbracknell.com. Update = git pull + systemctl restart otc-bot.
+PIN GATE: server reads secrets/pin.txt (gitignored) or env BOT_PIN; X-PIN header on all data/control endpoints; dashboard shows PIN screen. Mobile-responsive (table-layout fixed, fits screen).
+ssid: VPS holds session after paste; laptop can be off; re-grab only when expired (F12 on laptop or Kiwi browser on phone). Don't log out of PO.
