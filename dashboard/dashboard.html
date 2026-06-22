@@ -38,7 +38,10 @@
     th,td{padding:6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     th{font-size:8.5px;white-space:normal;line-height:1.05;vertical-align:bottom}
     /* give the first column (pair name) more room, shrink the rest */
-    th:first-child,td:first-child{width:30%}
+    th:first-child,td:first-child{width:34%}
+    .mhide{display:none}                 /* hide Expiry/BacktestWR/MinNeeded on phone */
+    #pairsTbl td,#pairsTbl th{white-space:normal}   /* let Status show full "READY" */
+    #pairsTbl td:last-child,#pairsTbl th:last-child{width:34%}
     .pill{font-size:9px;padding:1px 5px}
     #toasts{left:8px;right:8px;top:8px}
     .toast{font-size:12px;padding:8px 10px}
@@ -138,7 +141,7 @@
   <div class="card">
     <b>Trading pairs — live status</b>
     <div class="lbl" style="margin-top:2px">Green = payout high enough to trade now · Grey = waiting (payout too low)</div>
-    <table><thead><tr><th>Pair</th><th>Expiry</th><th>Backtest WR</th><th>Live payout</th><th>Min needed</th><th>Status</th></tr></thead>
+    <table id="pairsTbl"><thead><tr><th>Pair</th><th class="mhide">Expiry</th><th class="mhide">Backtest WR</th><th>Live payout</th><th class="mhide">Min needed</th><th>Status</th></tr></thead>
     <tbody id="pairs"><tr><td colspan="6" style="color:var(--mut)">loading…</td></tr></tbody></table>
   </div>
 
@@ -214,8 +217,8 @@ async function tick(){
       const st=p.in_trade?'<span style="color:var(--green);font-weight:900">● IN TRADE</span>'
               :p.tradeable?'<span style="color:var(--gold);font-weight:800">● READY</span>'
                           :'<span style="color:var(--mut)">⏸ waiting (payout low)</span>';
-      return `<tr><td>${p.asset}</td><td>${p.expiry}s</td><td>${p.wr_bt}%</td><td>${pay}</td>
-        <td>${p.min_payout}%</td><td>${st}</td></tr>`;}).join('');}
+      return `<tr><td>${p.asset}</td><td class="mhide">${p.expiry}s</td><td class="mhide">${p.wr_bt}%</td><td>${pay}</td>
+        <td class="mhide">${p.min_payout}%</td><td>${st}</td></tr>`;}).join('');}
     const sg=$('signals');
     if(s.signals&&s.signals.length){sg.innerHTML=s.signals.map(x=>{
       const ac=x.action==='BUY'?'<span style="color:var(--green);font-weight:900">▲ BUY</span>'

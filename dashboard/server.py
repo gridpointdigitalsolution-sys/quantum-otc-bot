@@ -95,6 +95,17 @@ def ping():
 def status(req: Request):
     if not _auth(req):
         return _deny()
+    eng = _engine["obj"]
+    # TRUTHFUL: only report "running" if an engine is actually alive (ignore stale status file)
+    if eng is None or not eng.s.running:
+        return JSONResponse({"running": False, "connected": False,
+                             "last_msg": "not running — paste ssid + Start",
+                             "pairs": [], "pair_status": [], "open_positions": [],
+                             "recent": [], "signals": [], "balance": None,
+                             "day_pnl": 0, "win_rate": 0, "day_trades": 0,
+                             "wins": 0, "losses": 0, "open_trades": 0,
+                             "session": "-", "session_trades": 0, "consec_losses": 0,
+                             "mode": "auto"})
     if os.path.exists(STATUS_PATH):
         return JSONResponse(json.load(open(STATUS_PATH, encoding="utf-8")))
     return JSONResponse({"running": False, "last_msg": "idle"})
