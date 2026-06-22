@@ -19,8 +19,41 @@ from bot.live_engine import LiveEngine, STATUS_PATH, BASKET_PATH
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
+ACTIVE = os.path.join(PROJ, "secrets", "active.json")   # persisted session (gitignored)
 app = FastAPI(title="Quantum OTC Bot")
 _engine = {"obj": None, "task": None}
+
+
+def _save_active(ssid, tz, demo):
+    try:
+        os.makedirs(os.path.dirname(ACTIVE), exist_ok=True)
+        json.dump({"ssid": ssid, "tz": tz, "demo": demo}, open(ACTIVE, "w"))
+    except Exception:
+        pass
+
+
+def _clear_active():
+    try:
+        os.remove(ACTIVE)
+    except Exception:
+        pass
+
+
+def _spawn(ssid, tz, demo):
+    eng = LiveEngine(ssid, tz_offset_hours=tz, demo=demo)
+    _engine["obj"] = eng
+    _engine["task"] = asyncio.create_task(eng.run())
+
+
+@app.on_event("startup")
+async def _resume():
+    # AUTO-RESUME after reboot/crash: if a session was saved, reconnect automatically.
+    if os.path.exists(ACTIVE):
+        try:
+            d = json.load(open(ACTIVE))
+            _spawn(d["ssid"], int(d.get("tz", 1)), bool(d.get("demo", True)))
+        except Exception:
+            pass
 
 
 def _load_pin():
@@ -88,9 +121,8 @@ async def start(req: Request):
         return {"ok": False, "msg": "paste the ssid (the green 42[\"auth\"...] frame)"}
     if _engine["obj"] and _engine["obj"].s.running:
         return {"ok": False, "msg": "already running — stop first"}
-    eng = LiveEngine(ssid, tz_offset_hours=tz, demo=demo)
-    _engine["obj"] = eng
-    _engine["task"] = asyncio.create_task(eng.run())
+    _save_active(ssid, tz, demo)      # persist so it auto-resumes after reboot/crash
+    _spawn(ssid, tz, demo)
     return {"ok": True, "msg": "engine starting…"}
 
 
@@ -110,6 +142,7 @@ async def mode(req: Request):
 async def stop(req: Request):
     if not _auth(req):
         return _deny()
+    _clear_active()                   # intentional stop -> don't auto-resume
     if _engine["obj"]:
         _engine["obj"].stop()
         return {"ok": True, "msg": "stopping…"}
