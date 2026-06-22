@@ -1,0 +1,36 @@
+# ── SECRETS — never commit, never push ──
+secrets/
+*.env
+*token*
+*.key
+config_local.*
+
+# ── heavy data (NOT needed for live; basket_po.json is the only data the bot needs) ──
+data/*
+!data/research
+data/research/*
+!data/research/basket_po.json
+
+# ── research corpus (huge, local only) ──
+books/
+books_txt/
+transcripts/
+*.pdf
+
+# ── python ──
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── logs / OS ──
+*.log
+.DS_Store
+Thumbs.db
+
+transcripts-forex/
+transcripts*/
+*.vtt
+*.docx
+*.ex4
+*.ex5

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Quantum OTC Bot</title>
+<style>
+  :root{--bg:#0c0a06;--panel:#15110a;--panel2:#1c1609;--bd:#2c2410;--gold:#f5c842;--gold2:#e8a800;
+        --green:#2db87a;--red:#e5544b;--mut:#9a8f78;--txt:#fff;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#1a1408,#0c0a06);color:var(--txt);
+       font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:14px;max-width:1100px;margin:auto}
+  h1{font-size:20px;font-weight:900;letter-spacing:.3px}
+  h1 span{color:var(--gold)}
+  .sub{color:var(--mut);font-size:12px;margin-top:2px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#666;margin-right:6px}
+  .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.off{background:var(--red)}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--bd);
+        border-radius:14px;padding:14px 16px;margin-top:12px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  textarea{width:100%;background:#0a0803;border:1px solid var(--bd);color:var(--txt);border-radius:10px;
+        padding:10px;font:13px/1.4 monospace;resize:vertical;min-height:60px}
+  .ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  select,input{background:#0a0803;border:1px solid var(--bd);color:var(--txt);border-radius:8px;padding:8px 10px}
+  button{border:0;border-radius:10px;padding:11px 22px;font-weight:800;cursor:pointer;font-size:15px}
+  .start{background:var(--gold);color:#000}.start:active{background:var(--gold2)}
+  .stop{background:#2a1411;color:var(--red);border:1px solid var(--red)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px}
+  .stat .k{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:24px;font-weight:900;margin-top:4px}
+  .v.g{color:var(--green)}.v.r{color:var(--red)}.v.gold{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd)}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase}
+  td.w{color:var(--green)}td.l{color:var(--red)}
+  .pill{font-size:11px;padding:2px 8px;border-radius:20px;background:#241c0c;color:var(--gold)}
+  .msg{font-size:12px;color:var(--mut);margin-top:8px;min-height:16px}
+  .lbl{font-size:12px;color:var(--mut);margin-bottom:4px}
+  .dot.live{animation:pulse 1.1s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,184,122,.6)}70%{box-shadow:0 0 0 10px rgba(45,184,122,0)}100%{box-shadow:0 0 0 0 rgba(45,184,122,0)}}
+  #toasts{position:fixed;top:14px;right:14px;z-index:99;display:flex;flex-direction:column;gap:8px}
+  .toast{background:#1c1609;border:1px solid var(--gold);border-radius:10px;padding:10px 14px;
+    font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);animation:slidein .3s}
+  .toast.win{border-color:var(--green);color:var(--green)}
+  .toast.loss{border-color:var(--red);color:var(--red)}
+  @keyframes slidein{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+  button:active{transform:scale(.96)}
+  .flash{animation:fl .6s}@keyframes fl{0%{background:#241c0c}100%{background:transparent}}
+</style>
+</head>
+<body>
+  <div id="toasts"></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div><h1>Quantum <span>OTC</span> Bot</h1><div class="sub">Pocket Option · binary · automated</div></div>
+    <div style="text-align:right"><span class="dot" id="dot"></span><b id="state">offline</b>
+      <div class="sub" id="upd"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Pocket Option session — paste the green <code>42["auth",{…}]</code> frame (F12 → Network → WS → Messages → filter "auth")</div>
+    <textarea id="ssid" placeholder='42["auth",{"session":"…","isDemo":1,"uid":…,"platform":2,…}]'></textarea>
+    <div class="ctl">
+      <label class="lbl" style="margin:0">Timezone offset
+        <select id="tz"><option value="1" selected>UTC+1 (Nigeria)</option>
+        <option value="0">UTC+0</option><option value="2">UTC+2</option><option value="-5">UTC-5</option></select>
+      </label>
+      <label class="lbl" style="margin:0">Account
+        <select id="demo"><option value="true" selected>DEMO</option><option value="false">LIVE</option></select>
+      </label>
+      <button class="start" onclick="start()">▶ Start</button>
+      <button class="stop" onclick="stop()">■ Stop</button>
+      <button id="modeBtn" onclick="toggleMode()" style="background:#1c2a3a;color:#3b9dff;border:1px solid #3b9dff">🤖 AUTO</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="grid" style="margin-top:12px">
+    <div class="stat"><div class="k">Balance</div><div class="v gold" id="bal">—</div></div>
+    <div class="stat"><div class="k">Today P&L</div><div class="v" id="pnl">—</div></div>
+    <div class="stat"><div class="k">Win rate</div><div class="v" id="wr">—</div></div>
+    <div class="stat"><div class="k">Trades today</div><div class="v" id="tt">—</div></div>
+  </div>
+  <div class="grid" style="margin-top:12px">
+    <div class="stat"><div class="k">Session</div><div class="v" id="sess" style="font-size:18px">—</div></div>
+    <div class="stat"><div class="k">Session trades</div><div class="v" id="st">—</div></div>
+    <div class="stat"><div class="k">Open trades</div><div class="v" id="ot">—</div></div>
+    <div class="stat"><div class="k">Consec losses</div><div class="v" id="cl">—</div></div>
+  </div>
+
+  <div class="card">
+    <b>⚡ Live signals — manual backup</b>
+    <div class="lbl" style="margin-top:2px">Every signal the bot sees. If it shows "placed" the bot traded it; if "skipped" you can place it manually on PO.</div>
+    <div id="takeNow" style="display:none;margin:10px 0;padding:12px 16px;border-radius:12px;font-size:18px;font-weight:900;text-align:center"></div>
+    <table><thead><tr><th>Time</th><th>Pair</th><th>Action</th><th>Expiry</th><th>Why</th><th>Bot</th></tr></thead>
+    <tbody id="signals"><tr><td colspan="6" style="color:var(--mut)">no signals yet</td></tr></tbody></table>
+  </div>
+
+  <div class="card">
+    <b>Open positions (live on Pocket Option now)</b>
+    <table><thead><tr><th>Pair</th><th>Direction</th><th>Stake</th><th>Closes in</th></tr></thead>
+    <tbody id="open"><tr><td colspan="4" style="color:var(--mut)">no open positions</td></tr></tbody></table>
+  </div>
+
+  <div class="card">
+    <b>Recent trades</b>
+    <table><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th>Stake</th><th>Result</th><th>Balance</th></tr></thead>
+    <tbody id="trades"><tr><td colspan="6" style="color:var(--mut)">no trades yet</td></tr></tbody></table>
+  </div>
+
+  <div class="card">
+    <b>Trading pairs — live status</b>
+    <div class="lbl" style="margin-top:2px">Green = payout high enough to trade now · Grey = waiting (payout too low)</div>
+    <table><thead><tr><th>Pair</th><th>Expiry</th><th>Backtest WR</th><th>Live payout</th><th>Min needed</th><th>Status</th></tr></thead>
+    <tbody id="pairs"><tr><td colspan="6" style="color:var(--mut)">loading…</td></tr></tbody></table>
+  </div>
+
+<script>
+const $=id=>document.getElementById(id);
+let AC=null;
+function beep(freq,dur,type){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=freq;
+  o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.18,AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);o.start();o.stop(AC.currentTime+dur);}catch(e){}}
+function chime(){beep(660,.12);setTimeout(()=>beep(990,.18),120);}        // start
+function winSound(){beep(880,.1);setTimeout(()=>beep(1320,.22),100);}     // win
+function lossSound(){beep(300,.3,'triangle');}                            // loss
+function toast(msg,cls){const d=document.createElement('div');d.className='toast '+(cls||'');
+  d.textContent=msg;$('toasts').appendChild(d);setTimeout(()=>d.remove(),5000);}
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return r.json();}
+async function start(){const ssid=$('ssid').value.trim();if(!ssid){$('msg').textContent='Paste the ssid first.';toast('Paste the ssid first');return;}
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();chime();askNotify();
+  $('msg').textContent='Starting…';toast('⚡ Engine starting…');
+  const r=await post('/start',{ssid,tz_offset:+$('tz').value,demo:$('demo').value==='true'});$('msg').textContent=r.msg;toast(r.msg);}
+async function stop(){const r=await post('/stop',{});$('msg').textContent=r.msg;toast('■ '+r.msg);beep(220,.25,'triangle');}
+let _mode='auto';
+async function toggleMode(){_mode=_mode==='auto'?'manual':'auto';const b=$('modeBtn');
+  if(_mode==='manual'){b.textContent='✋ MANUAL';b.style.color='var(--gold)';b.style.borderColor='var(--gold)';}
+  else{b.textContent='🤖 AUTO';b.style.color='#3b9dff';b.style.borderColor='#3b9dff';}
+  toast('Mode: '+_mode.toUpperCase());await post('/mode',{mode:_mode});}
+function say(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.05;u.volume=1;speechSynthesis.speak(u);}catch(e){}}
+function strongAlert(action){const hi=action==='BUY';
+  beep(hi?880:300,.15);setTimeout(()=>beep(hi?880:300,.15),200);setTimeout(()=>beep(hi?1100:260,.2),420);
+  say(hi?'buy buy buy':'sell sell sell');}
+function notify(title,body){try{if(window.Notification&&Notification.permission==='granted'){
+  new Notification(title,{body:body,icon:''});}}catch(e){}}
+function askNotify(){try{if(window.Notification&&Notification.permission!=='granted')Notification.requestPermission();}catch(e){}}
+let _lastTradeKey='',_lastRunning=false,_lastSigKey='';
+function money(x){const n=+x||0;return (n<0?'-$':'$')+Math.abs(n).toFixed(2);}
+async function tick(){
+  try{
+    const s=await (await fetch('/status')).json();
+    const on=s.running&&s.connected;
+    $('dot').className='dot '+(on?'on live':(s.connected===false&&s.running?'off':''));
+    $('state').textContent=on?'LIVE':(s.running?'connecting':'offline');
+    if(on&&!_lastRunning){toast('● Engine LIVE — scanning pairs','win');}
+    _lastRunning=on;
+    if(s.recent&&s.recent.length){const t=s.recent[0];const key=t.t+t.asset+t.profit;
+      if(_lastTradeKey&&key!==_lastTradeKey){
+        if(t.win){winSound();toast(`✅ WIN ${t.asset} +$${t.profit}`,'win');}
+        else{lossSound();toast(`❌ LOSS ${t.asset} $${t.profit}`,'loss');}
+        const tb=$('trades');tb.classList.add('flash');setTimeout(()=>tb.classList.remove('flash'),600);}
+      _lastTradeKey=key;}
+    $('upd').textContent=s.updated||'';
+    $('bal').textContent=s.balance!=null?money(s.balance):'—';
+    const p=s.day_pnl||0;$('pnl').textContent=money(p);$('pnl').className='v '+(p>0?'g':p<0?'r':'');
+    $('wr').textContent=s.win_rate!=null?(s.win_rate*100).toFixed(1)+'%':'—';
+    $('tt').textContent=(s.day_trades||0)+' / '+(s.wins||0)+'W '+(s.losses||0)+'L';
+    $('sess').textContent=s.session||'—';$('st').textContent=s.session_trades||0;
+    $('ot').textContent=s.open_trades||0;$('cl').textContent=s.consec_losses||0;
+    if(s.last_msg)$('msg').textContent=s.last_msg;
+    if(s.pair_status&&s.pair_status.length){$('pairs').innerHTML=s.pair_status.map(p=>{
+      const pay=p.payout!=null?p.payout+'%':'—';
+      const st=p.in_trade?'<span style="color:var(--green);font-weight:900">● IN TRADE</span>'
+              :p.tradeable?'<span style="color:var(--gold);font-weight:800">● READY</span>'
+                          :'<span style="color:var(--mut)">⏸ waiting (payout low)</span>';
+      return `<tr><td>${p.asset}</td><td>${p.expiry}s</td><td>${p.wr_bt}%</td><td>${pay}</td>
+        <td>${p.min_payout}%</td><td>${st}</td></tr>`;}).join('');}
+    const sg=$('signals');
+    if(s.signals&&s.signals.length){sg.innerHTML=s.signals.map(x=>{
+      const ac=x.action==='BUY'?'<span style="color:var(--green);font-weight:900">▲ BUY</span>'
+                              :'<span style="color:var(--red);font-weight:900">▼ SELL</span>';
+      const bot=x.acted?'<span style="color:var(--green)">● placed</span>'
+                       :'<span style="color:var(--mut)">skipped: '+(x.note||'')+'</span>';
+      return `<tr><td>${x.t}</td><td>${x.asset}</td><td>${ac}</td><td>${x.expiry}s</td><td style="font-size:11px;color:var(--mut)">${x.reason||''}</td><td>${bot}</td></tr>`;}).join('');}
+    else sg.innerHTML='<tr><td colspan="6" style="color:var(--mut)">no signals yet</td></tr>';
+    // TAKE NOW banner: show latest signal big, fades after ~ its expiry
+    const tn=$('takeNow');
+    if(s.signals&&s.signals.length){const x=s.signals[0];
+      const buy=x.action==='BUY';
+      tn.style.display='block';
+      tn.style.background=buy?'rgba(45,184,122,.15)':'rgba(229,84,75,.15)';
+      tn.style.border='2px solid '+(buy?'var(--green)':'var(--red)');
+      tn.style.color=buy?'var(--green)':'var(--red)';
+      tn.innerHTML=(buy?'▲ TAKE NOW: BUY ':'▼ TAKE NOW: SELL ')+x.asset+' &nbsp;·&nbsp; '+x.expiry+'s &nbsp;·&nbsp; '+(x.acted?'bot placed ✓':'<b>place manually</b>')+' <span style="font-size:12px;color:var(--mut)">@'+x.t+'</span>';}
+    else tn.style.display='none';
+    if(s.signals&&s.signals.length){const x=s.signals[0];const sk=x.t+x.asset+x.action;
+      if(_lastSigKey&&sk!==_lastSigKey){strongAlert(x.action);
+        const label=(x.action==='BUY'?'▲ BUY ':'▼ SELL ')+x.asset+' '+x.expiry+'s'+(x.acted?' — bot placed':' — TRADE MANUALLY!');
+        toast(label,x.action==='BUY'?'win':'loss');
+        notify((x.action==='BUY'?'▲ BUY NOW: ':'▼ SELL NOW: ')+x.asset,'Expiry '+x.expiry+'s · take now · '+(x.reason||''));}
+      _lastSigKey=sk;}
+    const op=$('open');const now=Date.now()/1000;
+    if(s.open_positions&&s.open_positions.length){op.innerHTML=s.open_positions.map(p=>{
+      const left=Math.max(0,Math.round((p.settles||now)-now));
+      return `<tr><td>${p.asset}</td><td style="color:${p.dir==='CALL'?'var(--green)':'var(--red)'};font-weight:800">${p.dir}</td>
+        <td>$${p.stake}</td><td>${left}s</td></tr>`;}).join('');}
+    else op.innerHTML='<tr><td colspan="4" style="color:var(--mut)">no open positions</td></tr>';
+    const tb=$('trades');
+    if(s.recent&&s.recent.length){tb.innerHTML=s.recent.map(t=>
+      `<tr><td>${t.t}</td><td>${t.asset}</td><td>${t.dir}</td><td>$${t.stake}</td>
+       <td class="${t.win?'w':'l'}">${t.win?'WIN +':'LOSS '}${money(t.profit)}</td><td>${money(t.bal)}</td></tr>`).join('');}
+  }catch(e){}
+}
+async function loadPairs(){try{const b=await (await fetch('/basket')).json();const t=$('pairs');
+  if(b.length){t.innerHTML=b.map(p=>`<tr><td>${p.asset}</td><td><span class="pill">${p.setup}</span></td>
+    <td>${p.expiry}s</td><td>${p.wr?(p.wr*100).toFixed(1)+'%':'—'}</td></tr>`).join('');}
+  else t.innerHTML='<tr><td colspan="4" style="color:var(--mut)">no basket yet — optimizer still running</td></tr>';
+}catch(e){}}
+loadPairs();setInterval(tick,2000);tick();setInterval(loadPairs,30000);
+</script>
+</body>
+</html>
