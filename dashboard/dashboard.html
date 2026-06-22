@@ -27,7 +27,22 @@
   .start{background:var(--gold);color:#000}.start:active{background:var(--gold2)}
   .stop{background:#2a1411;color:var(--red);border:1px solid var(--red)}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  @media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:720px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    body{padding:8px}
+    h1{font-size:17px}
+    .card{padding:11px 12px;overflow:hidden}
+    .stat .v{font-size:19px}
+    /* tables: force-fit the screen, no horizontal overflow ever */
+    table{table-layout:fixed;width:100%;font-size:11px}
+    th,td{padding:6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    th{font-size:8.5px;white-space:normal;line-height:1.05;vertical-align:bottom}
+    /* give the first column (pair name) more room, shrink the rest */
+    th:first-child,td:first-child{width:30%}
+    .pill{font-size:9px;padding:1px 5px}
+    #toasts{left:8px;right:8px;top:8px}
+    .toast{font-size:12px;padding:8px 10px}
+  }
   .stat{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px}
   .stat .k{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
   .stat .v{font-size:24px;font-weight:900;margin-top:4px}
