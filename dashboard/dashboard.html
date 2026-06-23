@@ -111,6 +111,10 @@
   .pcard .pmeta{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:5px}
   .fadein{animation:fadein .4s}@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   @media(max-width:720px){.hero-bal .v{font-size:34px}.pcards{grid-template-columns:repeat(2,1fr)}.chip b{font-size:16px}}
+  #openBar{display:none;margin-top:12px;padding:13px 16px;border-radius:12px;font-weight:800;font-size:15px;
+    background:rgba(45,184,122,.12);border:2px solid var(--green);color:var(--green);animation:pulse 1.5s infinite}
+  .chip.hot{border-color:var(--green);background:rgba(45,184,122,.12)}
+  .chip.hot b{color:var(--green)}
 </style>
 </head>
 <body>
@@ -168,9 +172,10 @@
     <div class="chip"><span class="k">Trades today</span><b id="tt">—</b></div>
     <div class="chip"><span class="k">Session</span><b id="sess">—</b></div>
     <div class="chip"><span class="k">Sess trades</span><b id="st">—</b></div>
-    <div class="chip"><span class="k">Open</span><b id="ot">—</b></div>
+    <div class="chip" id="otChip"><span class="k">Open</span><b id="ot">—</b></div>
     <div class="chip"><span class="k">Consec L</span><b id="cl">—</b></div>
   </div>
+  <div id="openBar"></div>
 
   <div class="card">
     <b>⚡ Live signals — manual backup</b>
@@ -309,6 +314,7 @@ async function tick(){
     $('tt').textContent=(s.day_trades||0)+' / '+(s.wins||0)+'W '+(s.losses||0)+'L';
     $('sess').textContent=s.session||'—';$('st').textContent=s.session_trades||0;
     $('ot').textContent=s.open_trades||0;$('cl').textContent=s.consec_losses||0;
+    const otChip=$('otChip');if(otChip)otChip.className='chip'+((s.open_trades||0)>0?' hot':'');
     if(s.last_msg)$('msg').textContent=s.last_msg;
     if(s.pair_status&&s.pair_status.length){$('pairs').innerHTML=s.pair_status.map(p=>{
       const pay=p.payout!=null?+p.payout:0;const minp=+p.min_payout||0;
@@ -350,6 +356,13 @@ async function tick(){
         notify((x.action==='BUY'?'▲ BUY NOW: ':'▼ SELL NOW: ')+x.asset,'Expiry '+x.expiry+'s · take now · '+(x.reason||''));}
       _lastSigKey=sk;}
     const op=$('open');const now=Date.now()/1000;
+    // PROMINENT live-open-trades banner (top) — so you always see how many are running.
+    const ob=$('openBar');
+    if(ob){if(s.open_positions&&s.open_positions.length){const n=s.open_positions.length;
+      const items=s.open_positions.map(p=>{const left=Math.max(0,Math.round((p.settles||now)-now));
+        return p.asset+' '+(p.dir==='CALL'?'▲':'▼')+' '+left+'s';}).join(' &nbsp;·&nbsp; ');
+      ob.innerHTML='🔴 '+n+' LIVE TRADE'+(n>1?'S':'')+' OPEN &nbsp;&nbsp; '+items;ob.style.display='block';}
+    else ob.style.display='none';}
     // LIVE in-play alert: voice + sound the moment a NEW position goes live (foreground).
     // (When the app is closed, the SERVER push handles it instead.)
     if(s.open_positions){for(const np of s.open_positions){const id=String(np.id||(np.asset+np.settles));
