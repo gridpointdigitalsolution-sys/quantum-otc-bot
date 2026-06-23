@@ -18,6 +18,7 @@ import numpy as np
 from .config import CONFIG
 from .registry import build_strategy
 from .data.po_source import load_ssid
+from . import push
 
 PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATUS_PATH = os.path.join(PROJ, "data", "live_status.json")
@@ -288,6 +289,16 @@ class LiveEngine:
                                       "stake": stake, "expiry": expiry,
                                       "settles": time.time() + expiry})
         self.s.last_msg = f"OPENED {action} {asset} ${stake} {expiry}s ({sig.reason})"
+        # PHONE PUSH: trade is now LIVE / in play — alert subscribed phones even if app closed.
+        # Fully wrapped + off-thread so a push failure can NEVER affect trading.
+        try:
+            mins = expiry / 60.0
+            dur = f"{mins:g} min" if expiry % 60 == 0 else f"{expiry}s"
+            title = ("⚡ LIVE BUY: " if action == "BUY" else "⚡ LIVE SELL: ") + asset
+            body = f"{action} {asset} · {dur} · ${stake} · in play now"
+            asyncio.get_event_loop().run_in_executor(None, push.send_all, title, body, "/", "live-" + str(tid))
+        except Exception:
+            pass
         asyncio.create_task(self._settle(tid, asset, sig.direction, stake, expiry))
 
     # ---------- main loop ----------

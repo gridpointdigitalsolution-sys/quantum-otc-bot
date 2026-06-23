@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Quantum OTC Bot</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0D0A00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
   :root{--bg:#0c0a06;--panel:#15110a;--panel2:#1c1609;--bd:#2c2410;--gold:#f5c842;--gold2:#e8a800;
         --green:#2db87a;--red:#e5544b;--mut:#9a8f78;--txt:#fff;}
@@ -188,7 +194,34 @@ function strongAlert(action){const hi=action==='BUY';
 function notify(title,body){try{if(window.Notification&&Notification.permission==='granted'){
   new Notification(title,{body:body,icon:''});}}catch(e){}}
 function askNotify(){try{if(window.Notification&&Notification.permission!=='granted')Notification.requestPermission();}catch(e){}}
-let _lastTradeKey='',_lastRunning=false,_lastSigKey='';
+// ── PWA + phone push ──────────────────────────────────────────────────────────
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+function urlB64ToUint8(b){const pad='='.repeat((4-b.length%4)%4);const s=(b+pad).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(s);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
+async function enablePush(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)){toast('Phone push not supported here — open in Chrome',' loss');return;}
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('Allow notifications to get phone alerts','loss');return;}
+    const reg=await navigator.serviceWorker.ready;
+    const k=await (await fetch('/vapid')).json();
+    if(!k||!k.key){toast('Push not ready on server yet','loss');return;}
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToUint8(k.key)});}
+    const r=await post('/subscribe',sub.toJSON?sub.toJSON():sub);
+    if(r&&r.ok){toast('🔔 Phone alerts ON — you can close the app','win');localStorage.setItem('pushon','1');
+      const b=$('pushBtn');if(b){b.textContent='🔔 Alerts ON';b.style.color='var(--green)';b.style.borderColor='var(--green)';}}
+    else toast('Could not register — try again','loss');
+  }catch(e){toast('Push error: '+(e.message||e),'loss');}
+}
+function mountPushBtn(){
+  if($('pushBtn'))return;
+  const b=document.createElement('button');b.id='pushBtn';
+  b.textContent=(localStorage.getItem('pushon')?'🔔 Alerts ON':'🔔 Enable phone alerts');
+  b.style.cssText='position:fixed;right:10px;bottom:10px;z-index:9999;background:var(--panel2);color:'+(localStorage.getItem('pushon')?'var(--green)':'var(--gold)')+';border:1.5px solid '+(localStorage.getItem('pushon')?'var(--green)':'var(--gold)')+';border-radius:22px;padding:9px 14px;font-weight:800;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.5)';
+  b.onclick=enablePush;document.body.appendChild(b);
+}
+mountPushBtn();
+let _lastTradeKey='',_lastRunning=false,_lastSigKey='',_seenOpen=new Set(),_openInit=false;
 function money(x){const n=+x||0;return (n<0?'-$':'$')+Math.abs(n).toFixed(2);}
 async function tick(){
   try{
@@ -248,6 +281,14 @@ async function tick(){
         notify((x.action==='BUY'?'▲ BUY NOW: ':'▼ SELL NOW: ')+x.asset,'Expiry '+x.expiry+'s · take now · '+(x.reason||''));}
       _lastSigKey=sk;}
     const op=$('open');const now=Date.now()/1000;
+    // LIVE in-play alert: voice + sound the moment a NEW position goes live (foreground).
+    // (When the app is closed, the SERVER push handles it instead.)
+    if(s.open_positions){for(const np of s.open_positions){const id=String(np.id||(np.asset+np.settles));
+      if(!_seenOpen.has(id)){_seenOpen.add(id);
+        if(_openInit){const buy=np.dir==='CALL';strongAlert(buy?'BUY':'SELL');
+          toast((buy?'⚡ LIVE BUY ':'⚡ LIVE SELL ')+np.asset+' · in play','win');
+          notify((buy?'⚡ LIVE BUY: ':'⚡ LIVE SELL: ')+np.asset,'$'+np.stake+' · '+np.expiry+'s · in play now');}}}
+      _openInit=true;}
     if(s.open_positions&&s.open_positions.length){op.innerHTML=s.open_positions.map(p=>{
       const left=Math.max(0,Math.round((p.settles||now)-now));
       return `<tr><td>${p.asset}</td><td style="color:${p.dir==='CALL'?'var(--green)':'var(--red)'};font-weight:800">${p.dir}</td>

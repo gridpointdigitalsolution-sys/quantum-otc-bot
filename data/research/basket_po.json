@@ -176,5 +176,35 @@
       0.647
     ],
     "note": "PROBATION: seg1 lost, needs ~84% payout, watch live WR"
+  },
+  {
+    "asset": "CADCHF_otc",
+    "setup": "s2_rsi",
+    "expiry": 180,
+    "params": {
+      "use_bb": true
+    },
+    "n": 319,
+    "wr": 0.552,
+    "pf": 1.13,
+    "dd": 10.88,
+    "variant": "s2_rsi_bb",
+    "seg_wr": [],
+    "note": "PROBATION: best risk-adjusted of the positive set (lowest DD 10.88, n=319). Params = S2RSI defaults best-effort (sweep stored no params). Needs ~85% payout. Watch live WR."
+  },
+  {
+    "asset": "USDTHB_otc",
+    "setup": "s2_rsi",
+    "expiry": 120,
+    "params": {
+      "use_bb": false
+    },
+    "n": 428,
+    "wr": 0.547,
+    "pf": 1.10,
+    "dd": 11.56,
+    "variant": "s2_rsi",
+    "seg_wr": [],
+    "note": "PROBATION: thin edge, large sample n=428, DD 11.56. Params = S2RSI defaults best-effort (sweep stored no params). Needs ~85% payout. Watch live WR."
   }
 ]

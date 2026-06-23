@@ -12,10 +12,11 @@ import asyncio, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, Response
 import uvicorn
 
 from bot.live_engine import LiveEngine, STATUS_PATH, BASKET_PATH
+from bot import push
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
@@ -99,6 +100,46 @@ def index():
 def ping():
     # tells the dashboard whether a PIN is needed (no secret leaked)
     return {"pin_required": bool(PIN)}
+
+
+# ── PWA + Web Push ────────────────────────────────────────────────────────────
+@app.get("/manifest.json")
+def manifest():
+    return FileResponse(os.path.join(HERE, "manifest.json"), media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+def service_worker():
+    # served from root so it controls the whole app scope
+    return FileResponse(os.path.join(HERE, "sw.js"), media_type="application/javascript")
+
+
+@app.get("/icon-192.png")
+def icon192():
+    return FileResponse(os.path.join(HERE, "icon-192.png"), media_type="image/png")
+
+
+@app.get("/icon-512.png")
+def icon512():
+    return FileResponse(os.path.join(HERE, "icon-512.png"), media_type="image/png")
+
+
+@app.get("/vapid")
+def vapid():
+    # public key is meant to be public — the browser needs it to subscribe
+    return {"key": push.get_public_key()}
+
+
+@app.post("/subscribe")
+async def subscribe(req: Request):
+    if not _auth(req):
+        return _deny()
+    try:
+        sub = await req.json()
+    except Exception:
+        return {"ok": False, "msg": "bad subscription"}
+    ok = push.add_sub(sub)
+    return {"ok": ok}
 
 
 @app.get("/status")
