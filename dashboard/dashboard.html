@@ -40,6 +40,7 @@
     /* give the first column (pair name) more room, shrink the rest */
     th:first-child,td:first-child{width:34%}
     .mhide{display:none}                 /* hide Expiry/BacktestWR/MinNeeded on phone */
+    .mwrap td,.mwrap th{white-space:normal;word-break:break-word;overflow:visible;text-overflow:clip;vertical-align:top}
     #pairsTbl td,#pairsTbl th{white-space:normal}   /* let Status show full "READY" */
     #pairsTbl td:last-child,#pairsTbl th:last-child{width:34%}
     .pill{font-size:9px;padding:1px 5px}
@@ -122,19 +123,19 @@
     <b>⚡ Live signals — manual backup</b>
     <div class="lbl" style="margin-top:2px">Every signal the bot sees. If it shows "placed" the bot traded it; if "skipped" you can place it manually on PO.</div>
     <div id="takeNow" style="display:none;margin:10px 0;padding:12px 16px;border-radius:12px;font-size:18px;font-weight:900;text-align:center"></div>
-    <table><thead><tr><th>Time</th><th>Pair</th><th>Action</th><th>Expiry</th><th>Why</th><th>Bot</th></tr></thead>
+    <table class="mwrap"><thead><tr><th>Time</th><th>Pair</th><th>Action</th><th>Expiry</th><th class="mhide">Why</th><th>Bot</th></tr></thead>
     <tbody id="signals"><tr><td colspan="6" style="color:var(--mut)">no signals yet</td></tr></tbody></table>
   </div>
 
   <div class="card">
     <b>Open positions (live on Pocket Option now)</b>
-    <table><thead><tr><th>Pair</th><th>Direction</th><th>Stake</th><th>Closes in</th></tr></thead>
+    <table class="mwrap"><thead><tr><th>Pair</th><th>Direction</th><th>Stake</th><th>Closes in</th></tr></thead>
     <tbody id="open"><tr><td colspan="4" style="color:var(--mut)">no open positions</td></tr></tbody></table>
   </div>
 
   <div class="card">
     <b>Recent trades</b>
-    <table><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th class="mhide">Stake</th><th>Result</th><th>Balance</th></tr></thead>
+    <table class="mwrap"><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th class="mhide">Stake</th><th>Result</th><th>Balance</th></tr></thead>
     <tbody id="trades"><tr><td colspan="6" style="color:var(--mut)">no trades yet</td></tr></tbody></table>
   </div>
 
@@ -225,7 +226,7 @@ async function tick(){
                               :'<span style="color:var(--red);font-weight:900">▼ SELL</span>';
       const bot=x.acted?'<span style="color:var(--green)">● placed</span>'
                        :'<span style="color:var(--mut)">skipped: '+(x.note||'')+'</span>';
-      return `<tr><td>${x.t}</td><td>${x.asset}</td><td>${ac}</td><td>${x.expiry}s</td><td style="font-size:11px;color:var(--mut)">${x.reason||''}</td><td>${bot}</td></tr>`;}).join('');}
+      return `<tr><td>${x.t}</td><td>${x.asset}</td><td>${ac}</td><td>${x.expiry}s</td><td class="mhide" style="font-size:11px;color:var(--mut)">${x.reason||''}</td><td>${bot}</td></tr>`;}).join('');}
     else sg.innerHTML='<tr><td colspan="6" style="color:var(--mut)">no signals yet</td></tr>';
     // TAKE NOW banner: only while the signal is still TAKEABLE (auto-clears after ~90s)
     const tn=$('takeNow');
