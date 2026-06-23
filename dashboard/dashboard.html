@@ -74,6 +74,43 @@
   @keyframes slidein{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
   button:active{transform:scale(.96)}
   .flash{animation:fl .6s}@keyframes fl{0%{background:#241c0c}100%{background:transparent}}
+  /* ── Tier 1 visual refresh (front-end only) ── */
+  .card{position:relative;transition:transform .15s,box-shadow .15s}
+  .card::before{content:"";position:absolute;left:0;top:0;height:3px;width:100%;
+    background:linear-gradient(90deg,var(--gold),transparent 70%);border-radius:14px 14px 0 0;opacity:.65}
+  @media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.45)}}
+  .hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .hero-main{flex:1;min-width:210px}
+  .hero-bal .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .hero-bal .v{font-size:44px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
+  .pnl-pill{display:inline-block;margin-top:6px;font-size:14px;font-weight:800;padding:3px 12px;border-radius:20px;
+    background:#241c0c;color:var(--mut)}
+  .pnl-pill.g{background:rgba(45,184,122,.15);color:var(--green)}
+  .pnl-pill.r{background:rgba(229,84,75,.15);color:var(--red)}
+  .spark{width:100%;height:60px;margin-top:10px;display:block}
+  .wr-wrap{position:relative;width:104px;height:104px;flex-shrink:0}
+  .ring{width:104px;height:104px;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--bd);stroke-width:7}
+  .ring-fg{fill:none;stroke:var(--gold);stroke-width:7;stroke-linecap:round;
+    stroke-dasharray:213.6;stroke-dashoffset:213.6;transition:stroke-dashoffset .6s ease}
+  .ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-txt .v{font-size:21px;font-weight:900}.ring-txt .k{font-size:9px;color:var(--mut);text-transform:uppercase}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--bd);border-radius:10px;
+    padding:9px 12px;flex:1;min-width:92px;text-align:center}
+  .chip .k{display:block;color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+  .chip b{font-size:18px;font-weight:900}
+  .pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+  .pcard{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:11px 12px;transition:transform .15s,border-color .2s}
+  .pcard.live{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+  @media(hover:hover){.pcard:hover{transform:translateY(-2px)}}
+  .pcard .pn{font-weight:800;font-size:14px}
+  .pcard .ps{font-size:11px;font-weight:800;margin:5px 0}
+  .pbar{height:6px;border-radius:6px;background:#241c0c;overflow:hidden;margin-top:6px}
+  .pbar > i{display:block;height:100%;border-radius:6px;transition:width .5s ease}
+  .pcard .pmeta{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:5px}
+  .fadein{animation:fadein .4s}@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media(max-width:720px){.hero-bal .v{font-size:34px}.pcards{grid-template-columns:repeat(2,1fr)}.chip b{font-size:16px}}
 </style>
 </head>
 <body>
@@ -112,17 +149,27 @@
     <div class="msg" id="msg"></div>
   </div>
 
-  <div class="grid" style="margin-top:12px">
-    <div class="stat"><div class="k">Balance</div><div class="v gold" id="bal">—</div></div>
-    <div class="stat"><div class="k">Today P&L</div><div class="v" id="pnl">—</div></div>
-    <div class="stat"><div class="k">Win rate</div><div class="v" id="wr">—</div></div>
-    <div class="stat"><div class="k">Trades today</div><div class="v" id="tt">—</div></div>
+  <div class="card hero">
+    <div class="hero-main">
+      <div class="hero-bal">
+        <div class="k">Balance</div>
+        <div class="v gold" id="bal">—</div>
+        <span class="pnl-pill" id="pnl">—</span>
+      </div>
+      <canvas id="eqChart" class="spark"></canvas>
+    </div>
+    <div class="wr-wrap">
+      <svg class="ring" viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" id="wrRing" cx="40" cy="40" r="34"/></svg>
+      <div class="ring-txt"><div class="v" id="wr">—</div><div class="k">win rate</div></div>
+    </div>
   </div>
-  <div class="grid" style="margin-top:12px">
-    <div class="stat"><div class="k">Session</div><div class="v" id="sess" style="font-size:18px">—</div></div>
-    <div class="stat"><div class="k">Session trades</div><div class="v" id="st">—</div></div>
-    <div class="stat"><div class="k">Open trades</div><div class="v" id="ot">—</div></div>
-    <div class="stat"><div class="k">Consec losses</div><div class="v" id="cl">—</div></div>
+  <div class="chips">
+    <div class="chip"><span class="k">Trades today</span><b id="tt">—</b></div>
+    <div class="chip"><span class="k">Session</span><b id="sess">—</b></div>
+    <div class="chip"><span class="k">Sess trades</span><b id="st">—</b></div>
+    <div class="chip"><span class="k">Open</span><b id="ot">—</b></div>
+    <div class="chip"><span class="k">Consec L</span><b id="cl">—</b></div>
   </div>
 
   <div class="card">
@@ -147,9 +194,8 @@
 
   <div class="card">
     <b>Trading pairs — live status</b>
-    <div class="lbl" style="margin-top:2px">Green = payout high enough to trade now · Grey = waiting (payout too low)</div>
-    <table id="pairsTbl"><thead><tr><th>Pair</th><th class="mhide">Expiry</th><th class="mhide">Backtest WR</th><th>Live payout</th><th class="mhide">Min needed</th><th>Status</th></tr></thead>
-    <tbody id="pairs"><tr><td colspan="6" style="color:var(--mut)">loading…</td></tr></tbody></table>
+    <div class="lbl" style="margin-top:2px">🟢 Ready = payout high enough to trade now · ⚡ In trade = position open · ⏸ Waiting = payout too low. Bar = live payout vs the minimum needed.</div>
+    <div id="pairs" class="pcards"><div style="color:var(--mut)">loading…</div></div>
   </div>
 
 <script>
@@ -223,6 +269,23 @@ function mountPushBtn(){
 mountPushBtn();
 let _lastTradeKey='',_lastRunning=false,_lastSigKey='',_seenOpen=new Set(),_openInit=false;
 function money(x){const n=+x||0;return (n<0?'-$':'$')+Math.abs(n).toFixed(2);}
+// ── Tier 1: animated balance, win-rate ring, equity sparkline ──
+let _balShown=null;
+function setBal(n){const el=$('bal');if(!el)return;if(n==null){el.textContent='—';_balShown=null;return;}
+  const from=_balShown==null?n:_balShown;_balShown=n;const t0=performance.now(),dur=500;
+  function step(t){const k=Math.min(1,(t-t0)/dur);const v=from+(n-from)*(k*(2-k));el.textContent=money(v);if(k<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);}
+function setWR(wr){const el=$('wr');if(el)el.textContent=wr!=null?(wr*100).toFixed(1)+'%':'—';
+  const r=$('wrRing');if(r)r.style.strokeDashoffset=213.6*(1-(wr||0));}
+function drawSpark(recent){const c=$('eqChart');if(!c)return;const dpr=window.devicePixelRatio||1;
+  const w=c.clientWidth||300,h=60;c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  if(!recent||recent.length<2)return;
+  const bals=recent.map(t=>+t.bal).filter(v=>!isNaN(v)).reverse();if(bals.length<2)return;
+  const mn=Math.min(...bals),mx=Math.max(...bals),rng=(mx-mn)||1;const up=bals[bals.length-1]>=bals[0];
+  const col=up?'#2db87a':'#e5544b';x.beginPath();
+  bals.forEach((b,i)=>{const px=(i/(bals.length-1))*w,py=h-4-((b-mn)/rng)*(h-8);i?x.lineTo(px,py):x.moveTo(px,py);});
+  x.strokeStyle=col;x.lineWidth=2;x.stroke();
+  x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fillStyle=up?'rgba(45,184,122,.12)':'rgba(229,84,75,.12)';x.fill();}
 async function tick(){
   try{
     const sr=await fetch('/status',{headers:hdr(),cache:'no-store'});if(sr.status===401){showGate();return;}
@@ -239,20 +302,26 @@ async function tick(){
         const tb=$('trades');tb.classList.add('flash');setTimeout(()=>tb.classList.remove('flash'),600);}
       _lastTradeKey=key;}
     $('upd').textContent=s.updated||'';
-    $('bal').textContent=s.balance!=null?money(s.balance):'—';
-    const p=s.day_pnl||0;$('pnl').textContent=money(p);$('pnl').className='v '+(p>0?'g':p<0?'r':'');
-    $('wr').textContent=s.win_rate!=null?(s.win_rate*100).toFixed(1)+'%':'—';
+    setBal(s.balance);
+    const p=s.day_pnl||0;$('pnl').textContent=(p>=0?'+':'')+money(p)+' today';$('pnl').className='pnl-pill '+(p>0?'g':p<0?'r':'');
+    setWR(s.win_rate);
+    drawSpark(s.recent);
     $('tt').textContent=(s.day_trades||0)+' / '+(s.wins||0)+'W '+(s.losses||0)+'L';
     $('sess').textContent=s.session||'—';$('st').textContent=s.session_trades||0;
     $('ot').textContent=s.open_trades||0;$('cl').textContent=s.consec_losses||0;
     if(s.last_msg)$('msg').textContent=s.last_msg;
     if(s.pair_status&&s.pair_status.length){$('pairs').innerHTML=s.pair_status.map(p=>{
-      const pay=p.payout!=null?p.payout+'%':'—';
-      const st=p.in_trade?'<span style="color:var(--green);font-weight:900">● IN TRADE</span>'
-              :p.tradeable?'<span style="color:var(--gold);font-weight:800">● READY</span>'
-                          :'<span style="color:var(--mut)">⏸ waiting (payout low)</span>';
-      return `<tr><td>${p.asset}</td><td class="mhide">${p.expiry}s</td><td class="mhide">${p.wr_bt}%</td><td>${pay}</td>
-        <td class="mhide">${p.min_payout}%</td><td>${st}</td></tr>`;}).join('');}
+      const pay=p.payout!=null?+p.payout:0;const minp=+p.min_payout||0;
+      const fill=Math.max(6,Math.min(100,minp?Math.round(pay/minp*100):0));
+      const live=p.in_trade,ready=p.tradeable;
+      const stcol=live?'var(--green)':ready?'var(--gold)':'var(--mut)';
+      const sttxt=live?'⚡ IN TRADE':ready?'🟢 READY':'⏸ waiting';
+      const barcol=live?'var(--green)':ready?'var(--gold)':'#5a4a20';
+      return `<div class="pcard${live?' live':''}"><div class="pn">${p.asset}</div>
+        <div class="ps" style="color:${stcol}">${sttxt}</div>
+        <div class="pbar"><i style="width:${fill}%;background:${barcol}"></i></div>
+        <div class="pmeta"><span>pay ${p.payout!=null?p.payout+'%':'—'}</span><span>need ${minp}%</span></div>
+        <div class="pmeta"><span>WR ${p.wr_bt}%</span><span>${p.expiry}s</span></div></div>`;}).join('');}
     const sg=$('signals');
     if(s.signals&&s.signals.length){sg.innerHTML=s.signals.map(x=>{
       const ac=x.action==='BUY'?'<span style="color:var(--green);font-weight:900">▲ BUY</span>'
@@ -301,9 +370,12 @@ async function tick(){
   }catch(e){}
 }
 async function loadPairs(){try{const br=await fetch('/basket',{headers:hdr(),cache:'no-store'});if(br.status===401){return;}const b=await br.json();const t=$('pairs');
-  if(b.length){t.innerHTML=b.map(p=>`<tr><td>${p.asset}</td><td><span class="pill">${p.setup}</span></td>
-    <td>${p.expiry}s</td><td>${p.wr?(p.wr*100).toFixed(1)+'%':'—'}</td></tr>`).join('');}
-  else t.innerHTML='<tr><td colspan="4" style="color:var(--mut)">no basket yet — optimizer still running</td></tr>';
+  if(!t||t.querySelector('.pcard'))return;   // live status already rendered cards -> don't clobber
+  if(b.length){t.innerHTML=b.map(p=>`<div class="pcard"><div class="pn">${p.asset}</div>
+    <div class="ps" style="color:var(--mut)">⏸ waiting</div>
+    <div class="pmeta"><span>${p.setup}</span><span>${p.expiry}s</span></div>
+    <div class="pmeta"><span>WR ${p.wr?(p.wr*100).toFixed(1):'—'}%</span><span></span></div></div>`).join('');}
+  else t.innerHTML='<div style="color:var(--mut)">no basket yet — optimizer still running</div>';
 }catch(e){}}
 $('pinInput')&&$('pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitPin();});
 checkGate().then(()=>{loadPairs();tick();});
