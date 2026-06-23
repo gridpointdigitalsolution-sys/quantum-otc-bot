@@ -134,7 +134,7 @@
 
   <div class="card">
     <b>Recent trades</b>
-    <table><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th>Stake</th><th>Result</th><th>Balance</th></tr></thead>
+    <table><thead><tr><th>Time</th><th>Pair</th><th>Dir</th><th class="mhide">Stake</th><th>Result</th><th>Balance</th></tr></thead>
     <tbody id="trades"><tr><td colspan="6" style="color:var(--mut)">no trades yet</td></tr></tbody></table>
   </div>
 
@@ -227,9 +227,12 @@ async function tick(){
                        :'<span style="color:var(--mut)">skipped: '+(x.note||'')+'</span>';
       return `<tr><td>${x.t}</td><td>${x.asset}</td><td>${ac}</td><td>${x.expiry}s</td><td style="font-size:11px;color:var(--mut)">${x.reason||''}</td><td>${bot}</td></tr>`;}).join('');}
     else sg.innerHTML='<tr><td colspan="6" style="color:var(--mut)">no signals yet</td></tr>';
-    // TAKE NOW banner: show latest signal big, fades after ~ its expiry
+    // TAKE NOW banner: only while the signal is still TAKEABLE (auto-clears after ~90s)
     const tn=$('takeNow');
-    if(s.signals&&s.signals.length){const x=s.signals[0];
+    const SIG_WINDOW=90;  // seconds a manual entry stays valid after the signal bar
+    const nowE=Date.now()/1000;
+    const freshSig=(s.signals&&s.signals.length&&s.signals[0].ts&&(nowE-s.signals[0].ts)<=SIG_WINDOW)?s.signals[0]:null;
+    if(freshSig){const x=freshSig;
       const buy=x.action==='BUY';
       tn.style.display='block';
       tn.style.background=buy?'rgba(45,184,122,.15)':'rgba(229,84,75,.15)';
@@ -251,7 +254,7 @@ async function tick(){
     else op.innerHTML='<tr><td colspan="4" style="color:var(--mut)">no open positions</td></tr>';
     const tb=$('trades');
     if(s.recent&&s.recent.length){tb.innerHTML=s.recent.map(t=>
-      `<tr><td>${t.t}</td><td>${t.asset}</td><td>${t.dir}</td><td>$${t.stake}</td>
+      `<tr><td>${t.t}</td><td>${t.asset}</td><td>${t.dir}</td><td class="mhide">$${t.stake}</td>
        <td class="${t.win?'w':'l'}">${t.win?'WIN +':'LOSS '}${money(t.profit)}</td><td>${money(t.bal)}</td></tr>`).join('');}
   }catch(e){}
 }

@@ -254,7 +254,8 @@ class LiveEngine:
         action = "BUY" if sig.direction == "CALL" else "SELL"
         ok, why = self._can_trade(asset)
         # record the SIGNAL regardless (manual-trade feed + audit of what bot saw)
-        sigrec = {"t": self._now_local().strftime("%H:%M:%S"), "asset": asset,
+        sigrec = {"t": self._now_local().strftime("%H:%M:%S"), "ts": time.time(),
+                  "asset": asset,
                   "action": action, "expiry": expiry, "reason": sig.reason,
                   "acted": ok, "note": "placed" if ok else why}
         self.s.signals = ([sigrec] + self.s.signals)[:25]
