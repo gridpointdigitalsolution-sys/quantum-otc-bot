@@ -138,5 +138,43 @@
       0.63,
       0.54
     ]
+  },
+  {
+    "asset": "USDCOP_otc",
+    "setup": "fade_extreme",
+    "expiry": 300,
+    "params": {
+      "k": 2.5
+    },
+    "n": 666,
+    "wr": 0.554,
+    "pf": 1.13,
+    "dd": 17.1,
+    "variant": "fade2.5",
+    "seg_wr": [
+      0.524,
+      0.592,
+      0.543
+    ],
+    "note": "PROBATION: thin edge, peak-hours only (needs ~85% payout), high frequency"
+  },
+  {
+    "asset": "USDBRL_otc",
+    "setup": "s2_rsi",
+    "expiry": 180,
+    "params": {
+      "use_bb": true
+    },
+    "n": 323,
+    "wr": 0.56,
+    "pf": 1.17,
+    "dd": 15.5,
+    "variant": "rsi_bb",
+    "seg_wr": [
+      0.504,
+      0.542,
+      0.647
+    ],
+    "note": "PROBATION: seg1 lost, needs ~84% payout, watch live WR"
   }
 ]

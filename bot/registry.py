@@ -10,9 +10,11 @@ from .strategy.s3_sweep import RsiAtLevel, SweepReversal
 from .strategy.ensemble import StochAtLevel, TripleGate, WilliamsAtLevel, BandRevAtLevel
 from .strategy.s1_bollinger import S1Bollinger
 from .strategy.fade import FadeStreak, FadeExtreme
+from .strategy.s2_rsi import S2RSI
 
 REGISTRY = {
     "rsi@lvl": RsiAtLevel,
+    "s2_rsi": S2RSI,
     "triple": TripleGate,
     "stoch@lvl": StochAtLevel,
     "williams": WilliamsAtLevel,
