@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Quantum Signal Scanner</title>
+<style>
+  :root{--bg:#0c0a06;--panel:#15110a;--panel2:#1c1609;--bd:#2c2410;--gold:#f5c842;--gold2:#e8a800;
+        --green:#2db87a;--red:#e5544b;--mut:#9a8f78;--txt:#fff;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#1a1408,#0c0a06);color:var(--txt);
+       font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:1000px;margin:auto;min-height:100vh}
+  header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  h1{font-size:22px;font-weight:900;letter-spacing:.3px}h1 span{color:var(--gold)}
+  .sub{color:var(--mut);font-size:12px;margin-top:2px}
+  .live{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:p 1.3s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(45,184,122,.6)}70%{box-shadow:0 0 0 9px rgba(45,184,122,0)}100%{box-shadow:0 0 0 0 rgba(45,184,122,0)}}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+  .stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--bd);border-radius:12px;
+        padding:10px 14px;flex:1;min-width:120px;text-align:center}
+  .stat .k{color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:22px;font-weight:900;margin-top:2px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:6px}
+  .card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--bd);
+        border-radius:14px;padding:14px 16px;animation:fade .4s}
+  .card::before{content:"";position:absolute;left:0;top:0;height:3px;width:100%;border-radius:14px 14px 0 0}
+  .card.buy::before{background:linear-gradient(90deg,var(--green),transparent 70%)}
+  .card.sell::before{background:linear-gradient(90deg,var(--red),transparent 70%)}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .ch{display:flex;justify-content:space-between;align-items:center}
+  .pair{font-size:17px;font-weight:900}
+  .side{font-size:13px;font-weight:900;padding:3px 10px;border-radius:20px}
+  .side.buy{background:rgba(45,184,122,.16);color:var(--green)}
+  .side.sell{background:rgba(229,84,75,.16);color:var(--red)}
+  .lv{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;border-bottom:1px dashed var(--bd);padding:4px 0}
+  .lv b{font-variant-numeric:tabular-nums}
+  .why{color:var(--mut);font-size:12px;margin-top:8px}
+  .meta{color:var(--mut);font-size:11px;margin-top:8px;display:flex;justify-content:space-between}
+  .empty{color:var(--mut);text-align:center;padding:40px 0}
+  .note{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--mut)}
+  .note b{color:var(--gold)}
+  .status{font-weight:900;font-size:13px;padding:7px 0;text-align:center;border-radius:8px;margin:9px 0 2px}
+  .status.enter{background:rgba(45,184,122,.16);color:var(--green)}
+  .status.exp{background:rgba(229,84,75,.12);color:var(--red)}
+  .card.expired{opacity:.5}
+</style>
+</head>
+<body>
+  <header>
+    <div><h1>Quantum <span>Signal</span> Scanner</h1>
+      <div class="sub">Institutional-grade forex & gold signals · entry · stop · target</div></div>
+    <div class="live"><span class="dot"></span> LIVE</div>
+  </header>
+
+  <div class="bar">
+    <div class="stat"><div class="k">Signals today</div><div class="v" id="today">—</div></div>
+    <div class="stat"><div class="k">This week</div><div class="v" id="week">—</div></div>
+    <div class="stat"><div class="k">Instruments</div><div class="v" id="instr">—</div></div>
+    <div class="stat"><div class="k">Last signal</div><div class="v" id="last" style="font-size:15px">—</div></div>
+  </div>
+
+  <div id="cards" class="grid"><div class="empty">Waiting for the next high-quality setup…</div></div>
+
+  <div class="note">How to use: when a signal appears, place the trade at <b>Entry</b>, set your <b>Stop loss</b>
+    and <b>Take profit</b> exactly as shown. Manage as you wish (cut early or move to break-even). Risk only
+    1–2% per trade. Signals are high-quality and selective — quality over quantity.</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let PIN=localStorage.getItem('sigpin')||'';
+function hdr(){return PIN?{'X-PIN':PIN}:{};}
+function num(x){return (x===null||x===undefined||x==='')?'—':x;}
+function ago(ts){const s=Math.max(0,Date.now()/1000-ts);
+  if(s<60)return Math.round(s)+'s ago';if(s<3600)return Math.round(s/60)+'m ago';
+  if(s<86400)return Math.round(s/3600)+'h ago';return Math.round(s/86400)+'d ago';}
+function fmtLeft(sec){sec=Math.max(0,Math.round(sec));const m=Math.floor(sec/60),s=sec%60;
+  return m>0?(m+'m '+(s<10?'0':'')+s+'s'):(s+'s');}
+let LAST=[];
+async function fetchSignals(){
+  try{
+    const r=await fetch('/signals',{headers:hdr(),cache:'no-store'});
+    if(r.status===401){const p=prompt('Enter your subscriber PIN');if(p){PIN=p;localStorage.setItem('sigpin',p);}return;}
+    const d=await r.json(); if(Array.isArray(d)) LAST=d;
+  }catch(e){}
+}
+function render(){
+  try{
+    const s=LAST;
+    const now=Date.now()/1000, day=86400, week=7*day;
+    $('today').textContent=s.filter(x=>now-x.ts<day).length;
+    $('week').textContent=s.filter(x=>now-x.ts<week).length;
+    $('instr').textContent=new Set(s.map(x=>x.pair)).size||'—';
+    $('last').textContent=s.length?ago(s[0].ts):'—';
+    const c=$('cards');
+    if(!s.length){c.innerHTML='<div class="empty">Waiting for the next high-quality setup…</div>';return;}
+    c.innerHTML=s.slice(0,60).map(x=>{
+      const buy=x.dir==='BUY';const cls=buy?'buy':'sell';
+      const exp=(x.expires_ts!=null?x.expires_ts:(x.ts+(x.valid_secs||600)));
+      const left=exp-now; const valid=left>0;
+      const status=valid
+        ? `<div class="status enter">✅ ENTER NOW · ${fmtLeft(left)} left</div>`
+        : `<div class="status exp">⛔ EXPIRED — do not enter</div>`;
+      return `<div class="card ${cls}${valid?'':' expired'}">
+        <div class="ch"><span class="pair">${x.pair}</span><span class="side ${cls}">${buy?'▲ BUY':'▼ SELL'}</span></div>
+        ${status}
+        <div class="lv"><span>Entry</span><b>${num(x.entry)}</b></div>
+        <div class="lv"><span>Stop loss</span><b style="color:var(--red)">${num(x.sl)}</b></div>
+        <div class="lv"><span>Take profit</span><b style="color:var(--green)">${num(x.tp)}</b></div>
+        ${x.reason?`<div class="why">${x.reason}</div>`:''}
+        <div class="meta"><span>${x.tf||''} ${x.engine?'· '+x.engine:''}</span><span>${ago(x.ts)}</span></div>
+      </div>`;}).join('');
+  }catch(e){}
+}
+fetchSignals().then(render);
+setInterval(fetchSignals,3000);   // refresh data from hub
+setInterval(render,1000);         // smooth live countdown (no extra server load)
+</script>
+</body>
+</html>
