@@ -71,6 +71,8 @@ class LiveEngine:
         self._seen_bar = {}                # asset -> last evaluated closed-bar epoch
         self._payouts = {}                 # asset -> live payout % (refreshed each loop)
         self._pair_sess = {}               # (session, asset) -> trades opened this session
+        self._order_block = {}             # asset -> epoch until which to skip after an order error
+        self._order_err_n = {}             # asset -> consecutive order-error count (for backoff)
 
     # ---------- setup ----------
     def load_basket(self):
@@ -227,6 +229,9 @@ class LiveEngine:
         self._write_status()
 
     async def _scan_asset(self, asset, strat, expiry, wr, min_pay):
+        # ORDER-ERROR BACKOFF: if recent orders on this asset failed, stop hammering it.
+        if self._order_block.get(asset, 0) > time.time():
+            return
         # per-pair LIVE payout gate: skip if current payout makes the edge negative
         pay = self._payouts.get(asset)
         if pay is not None and (pay / 100.0) < min_pay:
@@ -277,9 +282,21 @@ class LiveEngine:
             else:
                 tid, _ = await self.api.sell(asset, stake, expiry)
         except Exception as e:
-            self.s.last_msg = f"order err {asset}: {repr(e)[:40]}"
-            sigrec["acted"] = False; sigrec["note"] = "order error"
+            # BACKOFF: count the error, blank this asset for a growing window (2min→max 30min),
+            # and log the FULL error so the real cause is visible (truncated msg hid it before).
+            n = self._order_err_n.get(asset, 0) + 1
+            self._order_err_n[asset] = n
+            wait = min(1800, 120 * n)            # 2,4,6… up to 30 min
+            self._order_block[asset] = time.time() + wait
+            try:
+                with open(os.path.join(PROJ, "data", "order_errors.log"), "a", encoding="utf-8") as lf:
+                    lf.write(f"{self._now_local().strftime('%Y-%m-%d %H:%M:%S')}  {asset}  {repr(e)}\n")
+            except Exception:
+                pass
+            self.s.last_msg = f"order err {asset} (paused {wait//60}m): {repr(e)[:80]}"
+            sigrec["acted"] = False; sigrec["note"] = f"order error — paused {wait//60}m"
             return
+        self._order_err_n[asset] = 0             # success clears the backoff
         # COUNT AT OPEN (prevents over-trading past caps)
         self.s.day_trades += 1
         self.s.session_trades += 1
